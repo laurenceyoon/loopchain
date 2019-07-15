@@ -67,6 +67,14 @@ setup_options = {
     'install_requires': install_requires,
     'extras_require': {
         'tests': ['iconsdk==1.1.0', 'pytest>=4.6.3', 'pytest-xprocess>=0.12.1', "pytest-benchmark"],
+        'linter': [
+            'pre-commit',
+            'flake8',
+            'flake8-builtins',
+            'flake8-docstrings',
+            'flake8-import-order',
+            'flake8-logging-format'
+        ],
     },
     'entry_points': {
         'console_scripts': [
