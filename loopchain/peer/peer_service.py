@@ -20,22 +20,18 @@ import logging
 import multiprocessing
 import signal
 import timeit
-from functools import partial
 
 import grpc
 
 from loopchain import configure as conf
 from loopchain import utils
-from loopchain.baseservice import CommonSubprocess, ObjectManager, RestStubManager
-from loopchain.container import RestService
+from loopchain.baseservice import CommonSubprocess, ObjectManager, RestStubManager, RestService
 from loopchain.crypto.signature import Signer
 from loopchain.peer import PeerInnerService, PeerOuterService
 from loopchain.protos import loopchain_pb2_grpc
 from loopchain.tools.grpc_helper import GRPCHelper
 from loopchain.utils import loggers, command_arguments
 from loopchain.utils.message_queue import StubCollection
-
-DEFAULT_SCORE_PACKAGE = 'score/icx'
 
 
 class PeerService:
