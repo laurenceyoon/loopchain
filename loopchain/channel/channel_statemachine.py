@@ -31,23 +31,37 @@ from loopchain.utils import loggers
 @statemachine.StateMachine("Channel State Machine")
 class ChannelStateMachine(object):
     states = ['InitComponents',
-              State(name='Consensus', ignore_invalid_triggers=True,
+              State(name='Consensus',
+                    ignore_invalid_triggers=True,
                     on_enter='_consensus_on_enter'),
-              State(name='BlockHeightSync', ignore_invalid_triggers=True,
+              State(name='BlockHeightSync',
+                    ignore_invalid_triggers=True,
                     on_enter='_blockheightsync_on_enter'),
               'EvaluateNetwork',
-              State(name='BlockSync', ignore_invalid_triggers=True,
-                    on_enter='_blocksync_on_enter', on_exit='_blocksync_on_exit'),
-              State(name='SubscribeNetwork', ignore_invalid_triggers=True,
-                    on_enter='_subscribe_network_on_enter', on_exit='_subscribe_network_on_exit'),
-              State(name='Watch', ignore_invalid_triggers=True),
-              State(name='Vote', ignore_invalid_triggers=True,
-                    on_enter='_vote_on_enter', on_exit='_vote_on_exit'),
-              State(name='BlockGenerate', ignore_invalid_triggers=True,
-                    on_enter='_blockgenerate_on_enter', on_exit='_blockgenerate_on_exit'),
-              State(name='LeaderComplain', ignore_invalid_triggers=True,
-                    on_enter='_leadercomplain_on_enter', on_exit='_leadercomplain_on_exit'),
-              State(name='ResetNetwork', ignore_invalid_triggers=True,
+              State(name='BlockSync',
+                    ignore_invalid_triggers=True,
+                    on_enter='_blocksync_on_enter',
+                    on_exit='_blocksync_on_exit'),
+              State(name='SubscribeNetwork',
+                    ignore_invalid_triggers=True,
+                    on_enter='_subscribe_network_on_enter',
+                    on_exit='_subscribe_network_on_exit'),
+              State(name='Watch',
+                    ignore_invalid_triggers=True),
+              State(name='Vote',
+                    ignore_invalid_triggers=True,
+                    on_enter='_vote_on_enter',
+                    on_exit='_vote_on_exit'),
+              State(name='BlockGenerate',
+                    ignore_invalid_triggers=True,
+                    on_enter='_blockgenerate_on_enter',
+                    on_exit='_blockgenerate_on_exit'),
+              State(name='LeaderComplain',
+                    ignore_invalid_triggers=True,
+                    on_enter='_leadercomplain_on_enter',
+                    on_exit='_leadercomplain_on_exit'),
+              State(name='ResetNetwork',
+                    ignore_invalid_triggers=True,
                     on_enter='_do_reset_network_on_enter'),
               'GracefulShutdown']
     init_state = 'InitComponents'
@@ -71,25 +85,23 @@ class ChannelStateMachine(object):
     def block_height_sync(self):
         pass
 
-    @statemachine.transition(source=('BlockHeightSync', 'ResetNetwork'),
-                             dest='EvaluateNetwork',
-                             after='_do_evaluate_network')
+    @statemachine.transition(source=('BlockHeightSync', 'ResetNetwork'), dest='EvaluateNetwork')
     def evaluate_network(self):
-        pass
+        self._run_coroutine_threadsafe(self.__channel_service.evaluate_network())
 
-    @statemachine.transition(source=('EvaluateNetwork', 'Watch', 'Vote', 'BlockSync', 'BlockGenerate', 'LeaderComplain'),
-                             dest='BlockSync',
-                             after='_do_block_sync')
+    @statemachine.transition(source=('EvaluateNetwork', 'Watch', 'Vote',
+                                     'BlockSync', 'BlockGenerate', 'LeaderComplain'),
+                             dest='BlockSync')
     def block_sync(self):
-        pass
+        self.__channel_service.block_manager.block_height_sync()
 
     @statemachine.transition(source='Watch', dest='SubscribeNetwork')
     def subscribe_network(self):
         pass
 
-    @statemachine.transition(source=('Vote', 'LeaderComplain'), dest='Vote', after='_do_vote')
-    def vote(self):
-        pass
+    @statemachine.transition(source=('Vote', 'LeaderComplain'), dest='Vote')
+    def vote(self, unconfirmed_block: Block):
+        self._run_coroutine_threadsafe(self.__channel_service.block_manager.vote_as_peer(unconfirmed_block))
 
     def complete_subscribe(self):
         pass
@@ -119,15 +131,6 @@ class ChannelStateMachine(object):
 
     def _has_no_vote_function(self):
         return not self.__channel_service.is_support_node_function(conf.NodeFunction.Vote)
-
-    def _do_block_sync(self):
-        self.__channel_service.block_manager.block_height_sync()
-
-    def _do_evaluate_network(self):
-        self._run_coroutine_threadsafe(self.__channel_service.evaluate_network())
-
-    def _do_vote(self, unconfirmed_block: Block):
-        self._run_coroutine_threadsafe(self.__channel_service.block_manager.vote_as_peer(unconfirmed_block))
 
     def _consensus_on_enter(self, *args, **kwargs):
         self.block_height_sync()

@@ -220,6 +220,7 @@ class ChannelService:
         await self.__peer_manager.load_peers()
 
     async def evaluate_network(self):
+        utils.logger.notice(f"evaluate_network")
         await self._select_node_type()
         await self.__init_network()
         self.__ready_to_height_sync()
@@ -271,28 +272,29 @@ class ChannelService:
     def _is_role_switched(self) -> bool:
         current_height = self.__block_manager.blockchain.block_height
         if current_height < 0:
-            utils.logger.debug(f"Need to sync block, current_height({current_height})")
+            utils.logger.notice(f"Need to sync block, current_height({current_height})")
             return False
 
         if current_height == 0 and self._is_genesis_node():
-            utils.logger.debug(f"It's GenesisNode, but not registered yet")
+            utils.logger.notice(f"It's GenesisNode, but not registered yet")
             return False
 
         switch_block_height = self.__get_role_switch_block_height()
         if switch_block_height != -1 and current_height < switch_block_height:
-            utils.logger.debug(f"Waiting for role switch block height({switch_block_height}), "
-                               f"current_height({current_height})")
+            utils.logger.notice(
+                f"Waiting for role switch block height({switch_block_height}), "
+                f"current_height({current_height})")
             return False
 
         new_node_type = self._get_node_type_by_peer_list()
         if ChannelProperty().node_type == conf.NodeType.CommunityNode \
                 and new_node_type == conf.NodeType.CitizenNode:
-            utils.logger.debug(f"prep right expired...")
+            utils.logger.notice(f"prep right expired...")
             self.start_shutdown_timer_when_term_expired()
             return False
 
         if new_node_type == ChannelProperty().node_type:
-            utils.logger.debug(f"By peer manager, maintains the current node type({ChannelProperty().node_type})")
+            utils.logger.notice(f"By peer manager, maintains the current node type({ChannelProperty().node_type})")
             return False
 
         return True
@@ -304,13 +306,13 @@ class ChannelService:
             ChannelProperty().node_type = new_node_type
         self.__inner_service.update_sub_services_properties(node_type=ChannelProperty().node_type.value)
 
-    def switch_role(self):
+    def switch_role(self, force=False):
         self.peer_manager.update_all_peers()
-        if self._is_role_switched():
+        if self._is_role_switched() or force:
             self.__state_machine.switch_role()
 
     async def reset_network(self):
-        utils.logger.info("Reset network")
+        utils.logger.notice("Reset network")
         await self.__clean_network()
         self.__state_machine.evaluate_network()
 
@@ -654,6 +656,6 @@ class ChannelService:
     def start_shutdown_timer_when_term_expired(self):
         error = f"Shutdown by expired term with timeout({conf.TIMEOUT_FOR_LEADER_COMPLAIN}) sec"
         self.__timer_service.add_timer_convenient(timer_key=TimerService.TIMER_KEY_SHUTDOWN_WHEN_TERM_EXPIRED,
-                                                  duration=conf.TIMEOUT_FOR_LEADER_COMPLAIN,
-                                                  callback=self.shutdown_peer,
-                                                  callback_kwargs={"message": error})
+                                                  duration=conf.TIMEOUT_FOR_SHUTDOWN_WHEN_TERM_EXPIRED,
+                                                  callback=self.switch_role,
+                                                  callback_kwargs={"force": True})

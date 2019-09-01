@@ -50,7 +50,7 @@ install: $(INSTALL_REQUIRES)
 	$(PIP_INSTALL_CMD)
 
 requires-dev:
-	$(PIP_INSTALL) git+https://github.com/icon-project/icon-service.git@develop
+	$(PIP_INSTALL) git+https://github.com/icon-project/icon-service.git@hotfix-1.4.4
 	$(PIP_INSTALL) git+https://github.com/icon-project/icon-commons.git@master
 	$(PIP_INSTALL) git+https://github.com/icon-project/icon-rpc-server.git@develop
 	$(PIP_INSTALL) tbears
