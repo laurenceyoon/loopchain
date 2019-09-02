@@ -51,7 +51,6 @@ class ChannelService:
         self.__peer_manager: PeerManager = None
         self.__broadcast_scheduler: BroadcastScheduler = None
         self.__radio_station_stub = None
-        self.__consensus = None
         self.__timer_service = TimerService()
         self.__node_subscriber: NodeSubscriber = None
 
@@ -100,10 +99,6 @@ class ChannelService:
     @property
     def broadcast_scheduler(self):
         return self.__broadcast_scheduler
-
-    @property
-    def consensus(self):
-        return self.__consensus
 
     @property
     def timer_service(self):
@@ -171,11 +166,6 @@ class ChannelService:
             self.__broadcast_scheduler.wait()
             self.__broadcast_scheduler = None
             logging.info("Cleanup BroadcastScheduler.")
-
-        if self.__consensus:
-            self.__consensus.stop()
-            self.__consensus.wait()
-            logging.info("Cleanup Consensus.")
 
         if self.__timer_service.is_run():
             self.__timer_service.stop()
