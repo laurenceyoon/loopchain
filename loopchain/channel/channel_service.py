@@ -132,12 +132,10 @@ class ChannelService:
         loop = MessageQueueService.loop
         # loop.set_debug(True)
         loop.create_task(_serve())
-        loop.add_signal_handler(signal.SIGINT, self.close)
-        loop.add_signal_handler(signal.SIGTERM, self.close)
 
         try:
             loop.run_forever()
-        except Exception as e:
+        except BaseException as e:
             traceback.print_exception(type(e), e, e.__traceback__)
         finally:
             loop.run_until_complete(loop.shutdown_asyncgens())

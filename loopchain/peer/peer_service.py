@@ -34,6 +34,7 @@ from loopchain.protos import loopchain_pb2_grpc
 from loopchain.tools.grpc_helper import GRPCHelper
 from loopchain.utils import loggers, command_arguments
 from loopchain.utils.message_queue import StubCollection
+from typing import Dict
 
 DEFAULT_SCORE_PACKAGE = 'score/icx'
 
@@ -66,7 +67,7 @@ class PeerService:
         self._inner_service: PeerInnerService = None
         self._outer_service: PeerOuterService = None
 
-        self._channel_services = {}
+        self._channel_services: Dict[str, CommonSubprocess] = {}
         self._rest_service = None
 
         ObjectManager().peer_service = self
@@ -257,6 +258,9 @@ class PeerService:
         logging.info("Peer Service Ended.")
         if self._rest_service is not None:
             self._rest_service.stop()
+
+        for chan_service in self._channel_services.values():
+            chan_service.stop()
 
     def close(self):
         async def _close():
