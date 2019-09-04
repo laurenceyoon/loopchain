@@ -290,7 +290,7 @@ class ChannelService:
         if ChannelProperty().node_type == conf.NodeType.CommunityNode \
                 and new_node_type == conf.NodeType.CitizenNode:
             utils.logger.notice(f"prep right expired...")
-            self.start_shutdown_timer_when_term_expired()
+            self.start_restart_timer_when_term_expired()
             return False
 
         if new_node_type == ChannelProperty().node_type:
@@ -441,6 +441,10 @@ class ChannelService:
 
     def shutdown_peer(self, **kwargs):
         logging.debug(f"channel_service:shutdown_peer")
+        StubCollection().peer_stub.sync_task().stop(message=kwargs['message'])
+
+    def restart_channel(self, **kwargs):
+        logging.debug(f"channel_service:restart channel")
         StubCollection().peer_stub.sync_task().stop(message=kwargs['message'])
 
     def set_peer_type(self, peer_type):
@@ -653,9 +657,11 @@ class ChannelService:
     def stop_shutdown_timer_when_fail_subscribe(self):
         self.__timer_service.stop_timer(TimerService.TIMER_KEY_SHUTDOWN_WHEN_FAIL_SUBSCRIBE)
 
-    def start_shutdown_timer_when_term_expired(self):
-        error = f"Shutdown by expired term with timeout({conf.TIMEOUT_FOR_LEADER_COMPLAIN}) sec"
-        self.__timer_service.add_timer_convenient(timer_key=TimerService.TIMER_KEY_SHUTDOWN_WHEN_TERM_EXPIRED,
-                                                  duration=conf.TIMEOUT_FOR_SHUTDOWN_WHEN_TERM_EXPIRED,
-                                                  callback=self.switch_role,
-                                                  callback_kwargs={"force": True})
+    def start_restart_timer_when_term_expired(self):
+        reason = \
+            f"Restart channel by expired term with " \
+            f"timeout({conf.TIMEOUT_FOR_RESTART_WHEN_TERM_EXPIRED}) sec"
+        self.__timer_service.add_timer_convenient(timer_key=TimerService.TIMER_KEY_RESTART_WHEN_TERM_EXPIRED,
+                                                  duration=conf.TIMEOUT_FOR_RESTART_WHEN_TERM_EXPIRED,
+                                                  callback=self.restart_channel,
+                                                  callback_kwargs={"message": reason})
