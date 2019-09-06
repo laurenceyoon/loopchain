@@ -1142,6 +1142,7 @@ class BlockChain:
             # P-Rep list has no changes
             next_preps_hash = Hash32.empty()
 
+        # TODO: Re-locate reps_hash under BlockHeader or somewhere, without use ObjectManager
         if prev_block.header.version != "0.1a":
             reps = self.find_preps_addresses_by_roothash(_block.header.reps_hash)
         else:
